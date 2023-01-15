@@ -15,6 +15,15 @@ def add_timestamp(room: str, device: str, timestamp: Timestamp):
     return {"message": "sucessfully added timestamp"}
 
 
+@timestamp.post("/{room}/device/{device}/timestamp-update")
+def add_timestamp(room: str, device: str, timestamps: list[Timestamp]):
+    collection.update_one(
+        {"name": room, "devices.name": device},
+        {"$set": {"devices.$.timestamps": [dict(t) for t in timestamps]}},
+    )
+    return {"message": "sucessfully added timestamp"}
+
+
 @timestamp.get("/{room}/device/{device}/timestamp")
 def get_timestamps(room: str, device: str):
     result = collection.find_one(
