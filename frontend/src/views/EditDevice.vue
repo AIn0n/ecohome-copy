@@ -9,6 +9,7 @@ const route = useRoute();
 const router = useRouter();
 const { device, room } = route.params;
 const timestamps = ref([]);
+const days = ref({});
 
 function refresh_timestamps() {
   api
@@ -17,17 +18,13 @@ function refresh_timestamps() {
     .catch((e) => (error_text.value = "cannot get timestamps, try later"));
 }
 
-onBeforeMount(refresh_timestamps);
-
-const days = {
-  Sunday: 1,
-  Monday: 2,
-  Tuesday: 4,
-  Wednesday: 8,
-  Thursday: 16,
-  Friday: 32,
-  Saturday: 64,
-};
+onBeforeMount(() => {
+  refresh_timestamps();
+  api
+    .get("/day2number")
+    .then((res) => (days.value = res.data))
+    .catch((e) => (error_text.value = "server error"));
+});
 </script>
 
 <template lang="pug">

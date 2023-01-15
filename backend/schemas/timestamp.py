@@ -14,4 +14,4 @@ def timestamp_entities(items: list) -> dict:
 
 
 def flag_weekday_to_string_list(n: Weekdays) -> list[str]:
-    return [name for name, member in Weekdays.__members__.items() if member in n]
+    return [name.lower() for name, x in Weekdays.__members__.items() if x in n]

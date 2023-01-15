@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from models.timestamp import Timestamp
+from models.timestamp import Timestamp, Weekdays
 from config.db import collection
 from schemas.timestamp import timestamp_entities
 
@@ -22,3 +22,8 @@ def get_timestamps(room: str, device: str):
     )["devices"][0]["timestamps"]
 
     return timestamp_entities(result)
+
+
+@timestamp.get("/day2number")
+def get_day_to_number_mapping_dict():
+    return {name.lower(): x.value for name, x in Weekdays.__members__.items()}

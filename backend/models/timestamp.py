@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from enum import IntFlag
+from enum import Flag
 
 
-class Weekdays(IntFlag):
+class Weekdays(Flag):
     MONDAY = 1
     TUESDAY = 2
     WENDESDAY = 4
