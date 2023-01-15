@@ -5,9 +5,8 @@ import AlertComponent from "@/components/AlertComponent.vue";
 import api from "@/utilities/axios_config";
 
 const error_text = ref("example of warning");
-const route = useRoute();
 const router = useRouter();
-const { device, room } = route.params;
+const { device, room } = useRoute().params;
 const timestamps = ref([]);
 const days = ref({});
 
@@ -15,7 +14,7 @@ function refresh_timestamps() {
   api
     .get(`/${room}/device/${device}/timestamp`)
     .then((res) => (timestamps.value = res.data))
-    .catch((e) => (error_text.value = "cannot get timestamps, try later"));
+    .catch(() => (error_text.value = "cannot get timestamps, try later"));
 }
 
 onBeforeMount(() => {
@@ -23,7 +22,7 @@ onBeforeMount(() => {
   api
     .get("/day2number")
     .then((res) => (days.value = res.data))
-    .catch((e) => (error_text.value = "server error"));
+    .catch(() => (error_text.value = "server error"));
 });
 </script>
 
@@ -57,7 +56,7 @@ div(class="container text-center w-75")
             input(type="number" class="form-control" v-model="timestamp.end")
         div(class="list-group-item")
           div(class="form-check form-check-inline mx-4" v-for="(value, key) in days")
-            input(class="form-check-input" type="checkbox")
+            input(class="form-check-input" type="checkbox" v-model="timestamp.weekdays[key]")
             label(class="form-check-label") {{ key }}
     div
       button(type="button" class="btn-close" aria-label="Close")
