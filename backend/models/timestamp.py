@@ -13,8 +13,6 @@ class Weekdays(IntFlag):
 
 
 class Timestamp(BaseModel):
-    start_hour: int
-    start_minute: int
-    end_hour: int
-    end_minute: int
+    start: int
+    end: int
     weekdays: Weekdays
