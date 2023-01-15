@@ -23,7 +23,7 @@ const router = createRouter({
       props: true,
     },
     {
-      path: "/edit-device/:device",
+      path: "/:room/edit-device/:device",
       name: "edit-device",
       component: () => import("../views/EditDevice.vue"),
       props: true,

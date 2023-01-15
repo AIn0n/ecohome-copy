@@ -36,9 +36,9 @@ onBeforeMount(refresh_devices);
 div(class="row container")
   BorderList(title="Devices")
     li(class="list-group-item list-group-item-action d-flex justify-content-between" v-for="device in devices")
-      span(class="fs-5" @click="router.push('/edit-device/' + device.name)") {{ device.name }}
+      span(class="fs-5" @click="router.push(`/${name}/edit-device/${device.name}`)") {{ device.name }}
       button(type="button" class="btn-close" aria-label="Close" @click="remove_device(device.name)")
-    li(@click="router.push('/' + name + '/add-device')" class="list-group-item list-group-item-action list-group-item-primary fs-5") Add new device
+    li(@click="router.push(`/${name}/add-device`)" class="list-group-item list-group-item-action list-group-item-primary fs-5") Add new device
   div(class="col text-center")
     h1(class="my-5") {{ name }}
     AlertComponent(:text="error" @clear="error = ''")

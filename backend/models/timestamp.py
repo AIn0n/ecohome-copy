@@ -3,13 +3,13 @@ from enum import IntFlag, auto
 
 
 class Weekdays(IntFlag):
-    MONDAY = auto()
-    TUESDAY = auto()
-    WENDESDAY = auto()
-    THURSDAY = auto()
-    FRIDAY = auto()
-    SATURDAY = auto()
-    SUNDAY = auto()
+    MONDAY = 1
+    TUESDAY = 2
+    WENDESDAY = 4
+    THURSDAY = 8
+    FRIDAY = 16
+    SATURDAY = 32
+    SUNDAY = 64
 
 
 class Timestamp(BaseModel):
