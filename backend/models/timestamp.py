@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from enum import IntFlag, auto
+from enum import IntFlag
 
 
 class Weekdays(IntFlag):
