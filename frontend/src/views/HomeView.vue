@@ -201,14 +201,14 @@ div(class="row container")
         input(type="text" class="form-control fs-5" placeholder="new room name" v-model="new_room_name")
         button(class="btn btn-outline-primary" @click="add_room") Add
   div(class="col text-center")
-    h1(class="my-5") hello User!
+    h1(class="my-5") Eco Home
     AlertComponent(:text="error" @clear="error = ''")
     div(ref="chart")
     div(class="list-group col ms-5 mt-3")
-      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
+      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-5")
         p price before limit 
         p {{ price_before_limit }} PLN
-      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
+      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-5")
         p price after limit
         p {{ price_after_limit }} PLN
     div(class="row my-5")
@@ -220,7 +220,7 @@ div(class="row container")
         input(class="form-control form-control-sm" type="number" v-model="new_after")
       button(class="btn btn-primary col fs-5 mx-2" @click="update_payments") refresh price
     IconAndSpan(icon="fa-chart-line" text="highest consumption devices")
-    div(class="row mt-5")
+    div(class="row my-5")
       div(class="card border-warning col mx-3" v-for="device in highest_consumption_devices")
         div(class="card-body")
           h5(class="card-title") {{device.name}}
