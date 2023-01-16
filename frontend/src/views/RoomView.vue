@@ -67,10 +67,21 @@ function x_data() {
 
 onMounted(async () => {
   await refresh_devices();
-  console.log(prep_data_from_week(devices.value[0]));
-  Plotly.newPlot(chart.value, [
-    { x: x_data(), y: prep_data_from_week(devices.value[0]), type: "scatter" },
-  ]);
+  const x = x_data();
+  const traces = devices.value
+    .filter((dev) => dev.device_type == 0)
+    .map((dev) => ({
+      x: x,
+      y: prep_data_from_week(dev),
+      type: "scatter",
+      mode: "lines",
+      name: dev.name,
+    }));
+  console.log(traces);
+
+  Plotly.newPlot(chart.value, traces, {
+    title: "power usage over week",
+  });
 });
 </script>
 
