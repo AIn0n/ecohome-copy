@@ -101,28 +101,27 @@ function prep_solar_eff(devices) {
   for (const day of days) {
     let usage = sum_devices_for_day(defs, day);
     defs_acc = defs_acc.concat(usage);
-    let payment = usage.map(()=>0)
+    let payment = [...usage];
     for (const solar of solars) {
       for (const timestamp of solar.timestamps) {
         if (timestamp.weekdays[day] == true) {
           for (let i = timestamp.start; i < timestamp.end; ++i) {
             usage[i] += solar.parameter;
+            payment[i] += solar.parameter;
             if (usage[i] > limit) usage[i] = limit;
-            if (usage[i] < 0) {
-              payment[i] = -usage[i];
-            }
           }
         }
       }
-      to_pay_acc.push(payment);
       accumulator.push(usage);
     }
+    to_pay_acc.push(payment);
   }
+  console.log(to_pay_acc);
   const x = x_data();
   return [
     {
       x: x,
-      y: [].concat(...accumulator).map((elem)=> ((elem < 0) ? 0 : elem)),
+      y: [].concat(...accumulator).map((elem) => (elem < 0 ? 0 : elem)),
       type: "scatter",
       mode: "lines",
       name: "generated power",
@@ -143,7 +142,10 @@ function prep_solar_eff(devices) {
     },
     {
       x: x,
-      y: [].concat(...to_pay_acc),
+      y: []
+        .concat(...to_pay_acc)
+        .map((e) => -e)
+        .map((e) => (e > 0 ? e : 0)),
       type: "scatter",
       mode: "lines",
       name: "payment",
@@ -158,7 +160,6 @@ function redraw_chart() {
   } else {
     traces = prep_power_usage_traces(devices.value);
   }
-  console.log(traces);
   Plotly.newPlot(chart.value, traces, {
     title: "power usage over week",
   });

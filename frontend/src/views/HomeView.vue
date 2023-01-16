@@ -23,7 +23,9 @@ function get_rooms() {
     });
 }
 
-onBeforeMount(get_rooms);
+onBeforeMount(() => {
+  get_rooms();
+});
 
 function delete_room(room: string) {
   api
