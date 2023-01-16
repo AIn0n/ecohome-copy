@@ -47,28 +47,30 @@ function prep_data_from_one_device(device, day) {
   let data = Array(25)
     .fill()
     .map(() => 0);
-  for (const timestamp of device.timestamps) {
-    if (timestamp.weekdays[day] == true) {
-      for (let i = timestamp.start; i < timestamp.end; ++i) {
-        data[i] = device.parameter;
-      }
-    }
-  }
+  device.timestamps
+    .filter((i) => i.weekdays[day] == true)
+    .forEach((n) => {
+      for (let i = n.start; i < n.end; ++i) data[i] = device.parameter;
+    });
   return data;
 }
 
 function prep_data_from_week(device) {
-  return [].concat(...days.map((i)=> prep_data_from_one_device(device, i)));
+  return [].concat(...days.map((i) => prep_data_from_one_device(device, i)));
 }
 
 function x_data() {
-  return [].concat(...days.map((day)=>[...hours].map((hour)=> `${hour}:00 - ${day}`)))
+  return [].concat(
+    ...days.map((day) => [...hours].map((hour) => `${hour}:00 - ${day}`))
+  );
 }
 
 onMounted(async () => {
   await refresh_devices();
   console.log(prep_data_from_week(devices.value[0]));
-  Plotly.newPlot(chart.value, [{ x: x_data(), y: prep_data_from_week(devices.value[0]), type: "scatter" }]);
+  Plotly.newPlot(chart.value, [
+    { x: x_data(), y: prep_data_from_week(devices.value[0]), type: "scatter" },
+  ]);
 });
 </script>
 
