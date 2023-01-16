@@ -19,8 +19,8 @@ const hours = Array(25)
   .fill()
   .map((_, i) => i);
 
-function get_rooms() {
-  api
+async function get_rooms() {
+  await api
     .get("/room/")
     .then((res) => {
       rooms.value = res.data.map((x) => x.name);
@@ -30,24 +30,17 @@ function get_rooms() {
     });
 }
 
-onMounted(() => {
-  api
-    .get("/room/")
-    .then(async (res) => {
-      rooms.value = res.data.map((x) => x.name);
-      let all_devices = [];
-      for (const room of rooms.value) {
-        await api.get(`/${room}/device`).then((res) => {
-          all_devices.push(res.data);
-        });
-      }
-      Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)), {
-        title: "costs in zlotych",
-      });
-    })
-    .catch((e) => {
-      error.value = e.message + " (probably backend is not working)";
+onMounted(async () => {
+  await get_rooms();
+  let all_devices = [];
+  for (const room of rooms.value) {
+    await api.get(`/${room}/device`).then((res) => {
+      all_devices.push(res.data);
     });
+  }
+  Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)), {
+    title: "costs in zlotych",
+  });
 });
 
 const days = [
