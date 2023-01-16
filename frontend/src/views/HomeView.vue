@@ -6,11 +6,13 @@ import BorderList from "@/components/BorderList.vue";
 import IconAndSpan from "@/components/IconAndSpan.vue";
 import { onBeforeMount, onMounted, ref } from "vue";
 import api from "../utilities/axios_config";
-import Plotly from 'plotly.js-dist'
+import Plotly from "plotly.js-dist";
 
 const router = useRouter();
 const error = ref("example of warning message");
 const rooms = ref([]);
+const price_before_limit = 0.5;
+const price_after_limit = 0.7;
 const new_room_name = ref("");
 const chart = ref(null);
 const hours = Array(25)
@@ -28,27 +30,25 @@ function get_rooms() {
     });
 }
 
-onMounted(()=>{
+onMounted(() => {
   api
     .get("/room/")
     .then(async (res) => {
       rooms.value = res.data.map((x) => x.name);
       let all_devices = [];
       for (const room of rooms.value) {
-        await api.get(`/${room}/device`).then((res)=>{
+        await api.get(`/${room}/device`).then((res) => {
           all_devices.push(res.data);
-        })
+        });
       }
-      Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)),{
-        title: "solar system efficiency",
-
-      })
+      Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)), {
+        title: "costs in zlotych",
+      });
     })
     .catch((e) => {
       error.value = e.message + " (probably backend is not working)";
     });
-
-})
+});
 
 const days = [
   "monday",
@@ -72,27 +72,10 @@ function prep_data_from_one_device(device, day) {
   return data;
 }
 
-function prep_data_from_week(device) {
-  return [].concat(...days.map((i) => prep_data_from_one_device(device, i)));
-}
-
 function x_data() {
   return [].concat(
     ...days.map((day) => [...hours].map((hour) => `${hour}:00 - ${day}`))
   );
-}
-
-function prep_power_usage_traces(devices) {
-  const x = x_data();
-  return devices
-    .filter((dev) => dev.device_type == 0)
-    .map((dev) => ({
-      x: x,
-      y: prep_data_from_week(dev),
-      type: "scatter",
-      mode: "lines",
-      name: dev.name,
-    }));
 }
 
 function sum_devices_for_day(devices, day) {
@@ -109,51 +92,45 @@ function sum_devices_for_day(devices, day) {
 function prep_solar_eff(devices) {
   const defs = devices.filter((dev) => dev.device_type == 0);
   const solars = devices.filter((dev) => dev.device_type == 1);
-  const accs = devices.filter((dev) => dev.device_type == 2);
-  const limit = accs.reduce((acc, n) => acc + n.parameter, 0);
-  let accumulator = [];
-  let defs_acc = [];
   let to_pay_acc = [];
   for (const day of days) {
     let usage = sum_devices_for_day(defs, day);
-    defs_acc = defs_acc.concat(usage);
     let payment = [...usage];
     for (const solar of solars) {
       for (const timestamp of solar.timestamps) {
         if (timestamp.weekdays[day] == true) {
           for (let i = timestamp.start; i < timestamp.end; ++i) {
-            usage[i] += solar.parameter;
             payment[i] += solar.parameter;
-            if (usage[i] > limit) usage[i] = limit;
           }
         }
       }
-      accumulator.push(usage);
     }
     to_pay_acc.push(payment);
   }
-  const over =[]
-        .concat(...to_pay_acc)
-        .map((e) => -e)
-        .map((e) => (e > 0 ? e : 0));
+  const over = []
+    .concat(...to_pay_acc)
+    .map((e) => -e)
+    .map((e) => (e > 0 ? e : 0));
 
-  let result = over.map(()=>0);
+  let result = over.map(() => 0);
   for (let i = 1; i < result.length; ++i) {
-    result[i] += over[i - 1]
+    for (let j = 0; j < i; ++j) {
+      result[i] += over[j];
+    }
   }
   console.log(to_pay_acc);
   const x = x_data();
   return [
     {
       x: x,
-      y: result, 
+      y: result.map((e) =>
+        e > 2000 ? e * price_after_limit : e * price_before_limit
+      ),
       type: "scatter",
       mode: "lines",
-      name: "payment",
     },
   ];
 }
-
 
 function delete_room(room) {
   api
