@@ -97,18 +97,24 @@ function prep_solar_eff(devices) {
   const limit = accs.reduce((acc, n) => acc + n.parameter, 0);
   let accumulator = [];
   let defs_acc = [];
+  let to_pay_acc = [];
   for (const day of days) {
     let usage = sum_devices_for_day(defs, day);
     defs_acc = defs_acc.concat(usage);
+    let payment = usage.map(()=>0)
     for (const solar of solars) {
       for (const timestamp of solar.timestamps) {
         if (timestamp.weekdays[day] == true) {
           for (let i = timestamp.start; i < timestamp.end; ++i) {
             usage[i] += solar.parameter;
             if (usage[i] > limit) usage[i] = limit;
+            if (usage[i] < 0) {
+              payment[i] = -usage[i];
+            }
           }
         }
       }
+      to_pay_acc.push(payment);
       accumulator.push(usage);
     }
   }
@@ -116,7 +122,7 @@ function prep_solar_eff(devices) {
   return [
     {
       x: x,
-      y: [].concat(...accumulator),
+      y: [].concat(...accumulator).map((elem)=> ((elem < 0) ? 0 : elem)),
       type: "scatter",
       mode: "lines",
       name: "generated power",
@@ -134,6 +140,13 @@ function prep_solar_eff(devices) {
       type: "scatter",
       mode: "lines",
       name: "capacity",
+    },
+    {
+      x: x,
+      y: [].concat(...to_pay_acc),
+      type: "scatter",
+      mode: "lines",
+      name: "payment",
     },
   ];
 }
