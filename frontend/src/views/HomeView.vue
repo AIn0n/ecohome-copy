@@ -17,9 +17,18 @@ const new_before = ref(0);
 const new_after = ref(0);
 const new_room_name = ref("");
 const chart = ref(null);
+const all_devices = ref([]);
+const highest_consumption_devices = ref([]);
 const hours = Array(25)
   .fill()
   .map((_, i) => i);
+
+
+
+function refresh_highest_cons() {
+  highest_consumption_devices.value = all_devices.value.filter((x)=>x.device_type == 0).sort((a,b) =>{a.parameter - b.parameter}).slice(0,3);
+  console.log(highest_consumption_devices)
+}
 
 function refresh_payments() {
   api
@@ -58,20 +67,22 @@ function update_payments() {
 
 async function refresh_chart() {
   await get_rooms();
-  let all_devices = [];
+  let tmp = [];
   for (const room of rooms.value) {
     await api.get(`/${room}/device`).then((res) => {
-      all_devices.push(res.data);
+      tmp.push(res.data);
     });
   }
-  Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)), {
+  all_devices.value = [].concat(...tmp);
+  Plotly.newPlot(chart.value, prep_solar_eff(all_devices.value), {
     title: "costs in zlotych",
   });
 }
 
-onMounted(() => {
+onMounted(async () => {
   refresh_payments();
-  refresh_chart();
+  await refresh_chart();
+  refresh_highest_cons();
 });
 
 const days = [
@@ -175,7 +186,7 @@ function add_room() {
     })
     .catch((e) => (error.value = e.message));
 }
-
+/*
 const highest_consumption_devices = [
   {
     name: "TV",
@@ -196,6 +207,7 @@ const highest_consumption_devices = [
     room: "kitchen",
   },
 ];
+*/
 </script>
 
 <template lang="pug">
@@ -232,11 +244,10 @@ div(class="row container")
       div(class="card border-warning col mx-3" v-for="device in highest_consumption_devices")
         div(class="card-body")
           h5(class="card-title") {{device.name}}
-          h6(class="card-subtitle mb-2 text-muted") {{  device.room }}
         ul(class="list-group list-group-flush")
           li(class="list-group-item d-flex justify-content-between fs-5") 
             p energy drain 
-            p {{ device.energy_drain }} kWh 
+            p {{ device.parameter }} kWh 
           li(class="list-group-item d-flex justify-content-between fs-5")
             p energy class 
             p {{ device.energy_class }}
