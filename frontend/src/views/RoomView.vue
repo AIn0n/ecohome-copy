@@ -47,20 +47,28 @@ function prep_data_from_one_device(device, day) {
   let data = Array(25)
     .fill()
     .map(() => 0);
-  console.log(data);
   for (const timestamp of device.timestamps) {
-    console.log(timestamp.weekdays);
-    for (let i = timestamp.start; i < timestamp.end; ++i) {
-      data[i] = device.parameter;
+    if (timestamp.weekdays[day] == true) {
+      for (let i = timestamp.start; i < timestamp.end; ++i) {
+        data[i] = device.parameter;
+      }
     }
   }
   return data;
 }
 
+function prep_data_from_week(device) {
+  return [].concat(...days.map((i)=> prep_data_from_one_device(device, i)));
+}
+
+function x_data() {
+  return [].concat(...days.map((day)=>[...hours].map((hour)=> `${hour}:00 - ${day}`)))
+}
+
 onMounted(async () => {
   await refresh_devices();
-  const y = prep_data_from_one_device(devices.value[0]);
-  Plotly.newPlot(chart.value, [{ x: hours, y: y, type: "scatter" }]);
+  console.log(prep_data_from_week(devices.value[0]));
+  Plotly.newPlot(chart.value, [{ x: x_data(), y: prep_data_from_week(devices.value[0]), type: "scatter" }]);
 });
 </script>
 
