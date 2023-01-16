@@ -9,6 +9,12 @@ const router = useRouter();
 const { device, room } = useRoute().params;
 const timestamps = ref([]);
 const days = ref({});
+const add_new = ref(false);
+const new_timestamp = ref({
+  start: 0,
+  end: 0,
+  weekdays: {},
+});
 
 function refresh_timestamps() {
   api
@@ -17,7 +23,10 @@ function refresh_timestamps() {
     .catch(() => (error_text.value = "cannot get timestamps, try later"));
 }
 
-function update_timestamps() {
+function preprocess_timestamps() {
+  if (add_new.value == true) {
+    timestamps.value.push(new_timestamp.value);
+  }
   timestamps.value.forEach((elem) => {
     let week_as_num = 0;
     Object.entries(elem["weekdays"]).forEach(([key, value]) => {
@@ -25,6 +34,10 @@ function update_timestamps() {
     });
     elem["weekdays"] = week_as_num;
   });
+}
+
+function update_timestamps() {
+  preprocess_timestamps();
   api
     .post(`/${room}/device/${device}/timestamp-update`, timestamps.value)
     .then((res) => {
@@ -42,7 +55,12 @@ onBeforeMount(() => {
   refresh_timestamps();
   api
     .get("/day2number")
-    .then((res) => (days.value = res.data))
+    .then((res) => {
+      days.value = res.data;
+      for (const key in res.data) {
+        new_timestamp.value.weekdays[key] = false;
+      }
+    })
     .catch(() => (error_text.value = "server error"));
 });
 </script>
@@ -54,19 +72,19 @@ div(class="container text-center w-75")
   div(class="card text-bg-primary my-3")
     div(class="card-header")
       div(class="form-check")
-        input(class="form-check-input" type="checkbox")
+        input(class="form-check-input" type="checkbox" v-model="add_new")
         label(class="form-check-label") add new timestamp
     div(class="list-group list-group-flush")
       div(class="list-group-item d-flex justify-content-between")
         div(class="input-group input-group-sm w-50 mx-3 my-3")
           span(class="input-group-text") start
-          input(type="number" class="form-control" placeholder="hours")
+          input(type="number" class="form-control" placeholder="hours" v-model="new_timestamp.start")
         div(class="input-group input-group-sm w-50 mx-3 my-3")
           span(class="input-group-text") end
-          input(type="number" class="form-control" placeholder="hours")
+          input(type="number" class="form-control" placeholder="hours" v-model="new_timestamp.end")
       div(class="list-group-item")
         div(class="form-check form-check-inline mx-4" v-for="(value, key) in days")
-          input(class="form-check-input" type="checkbox")
+          input(class="form-check-input" type="checkbox" v-model="new_timestamp.weekdays[key]")
           label(class="form-check-label") {{ key }}
   div(class="d-flex align-items-center" v-for="timestamp in timestamps")
     div(class="card text-bg-primary me-5 my-3")
