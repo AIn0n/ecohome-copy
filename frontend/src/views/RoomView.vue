@@ -13,6 +13,7 @@ const error = ref("warning");
 const { name } = route.params;
 const devices = ref([]);
 const chart = ref(null);
+const chart_type = ref("power");
 const days = [
   "monday",
   "tuesday",
@@ -65,10 +66,9 @@ function x_data() {
   );
 }
 
-onMounted(async () => {
-  await refresh_devices();
+function prep_power_usage_traces(devices) {
   const x = x_data();
-  const traces = devices.value
+  return devices
     .filter((dev) => dev.device_type == 0)
     .map((dev) => ({
       x: x,
@@ -77,8 +77,83 @@ onMounted(async () => {
       mode: "lines",
       name: dev.name,
     }));
-  console.log(traces);
+}
 
+function sum_devices_for_day(devices, day) {
+  const arrays = devices.map((elem) => prep_data_from_one_device(elem, day));
+  let result = hours.map(() => 0);
+  for (let j = 0; j < hours.length; ++j) {
+    for (let i = 0; i < arrays.length; ++i) {
+      result[j] -= arrays[i][j];
+    }
+  }
+  return result;
+}
+
+function prep_solar_eff(devices) {
+  const defs = devices.filter((dev) => dev.device_type == 0);
+  const solars = devices.filter((dev) => dev.device_type == 1);
+  const accs = devices.filter((dev) => dev.device_type == 2);
+  const limit = accs.reduce((acc, n) => acc + n.parameter, 0);
+  let accumulator = [];
+  let defs_acc = [];
+  for (const day of days) {
+    let usage = sum_devices_for_day(defs, day);
+    defs_acc = defs_acc.concat(usage);
+    for (const solar of solars) {
+      for (const timestamp of solar.timestamps) {
+        if (timestamp.weekdays[day] == true) {
+          for (let i = timestamp.start; i < timestamp.end; ++i) {
+            usage[i] += solar.parameter;
+            if (usage[i] > limit) usage[i] = limit;
+          }
+        }
+      }
+      accumulator.push(usage);
+    }
+  }
+  const x = x_data();
+  return [
+    {
+      x: x,
+      y: [].concat(...accumulator),
+      type: "scatter",
+      mode: "lines",
+      name: "generated power",
+    },
+    {
+      x: x,
+      y: defs_acc,
+      type: "scatter",
+      mode: "lines",
+      name: "used power",
+    },
+    {
+      x: x,
+      y: defs_acc.map(() => limit),
+      type: "scatter",
+      mode: "lines",
+      name: "capacity",
+    },
+  ];
+}
+
+function redraw_chart() {
+  let traces;
+  if (chart_type.value === "usage") {
+    traces = prep_solar_eff(devices.value);
+  } else {
+    traces = prep_power_usage_traces(devices.value);
+  }
+  console.log(traces);
+  Plotly.newPlot(chart.value, traces, {
+    title: "power usage over week",
+  });
+}
+
+onMounted(async () => {
+  await refresh_devices();
+  const traces = prep_power_usage_traces(devices.value);
   Plotly.newPlot(chart.value, traces, {
     title: "power usage over week",
   });
@@ -95,6 +170,9 @@ div(class="row container")
   div(class="col text-center")
     h1(class="my-5") {{ name }}
     AlertComponent(:text="error" @clear="error = ''")
+    select(class="form-select" @change="redraw_chart" v-model="chart_type")
+      option(selected value="power") power usage 
+      option(value="usage") solar panels efficiency
     div(ref="chart") 
     button(@click="router.push('/')" class="btn btn-outline-secondary position-absolute top-0 end-0 mx-5 my-5 fs-4") back
 </template>
