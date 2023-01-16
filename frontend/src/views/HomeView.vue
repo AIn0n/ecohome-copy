@@ -11,13 +11,26 @@ import Plotly from "plotly.js-dist";
 const router = useRouter();
 const error = ref("example of warning message");
 const rooms = ref([]);
-const price_before_limit = 0.5;
-const price_after_limit = 0.7;
+const price_before_limit = ref(0);
+const price_after_limit = ref(0);
+const new_before = ref(0);
+const new_after = ref(0);
 const new_room_name = ref("");
 const chart = ref(null);
 const hours = Array(25)
   .fill()
   .map((_, i) => i);
+
+function refresh_payments() {
+  api
+    .get("/payments")
+    .then((res) => {
+      price_before_limit.value = res.data.before_limit;
+      price_after_limit.value = res.data.after_limit;
+    })
+    .catch(() => (error.value = "cannot gather costs"));
+  refresh_chart();
+}
 
 async function get_rooms() {
   await api
@@ -30,7 +43,20 @@ async function get_rooms() {
     });
 }
 
-onMounted(async () => {
+function update_payments() {
+  api
+    .post("/payments", {
+      before_limit: new_before.value,
+      after_limit: new_after.value,
+    })
+    .then((res) => {
+      error.value = "successfully updated costs";
+      refresh_payments();
+    })
+    .catch(() => (error.value = "cannot update costs"));
+}
+
+async function refresh_chart() {
   await get_rooms();
   let all_devices = [];
   for (const room of rooms.value) {
@@ -41,6 +67,11 @@ onMounted(async () => {
   Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)), {
     title: "costs in zlotych",
   });
+}
+
+onMounted(() => {
+  refresh_payments();
+  refresh_chart();
 });
 
 const days = [
@@ -117,7 +148,7 @@ function prep_solar_eff(devices) {
     {
       x: x,
       y: result.map((e) =>
-        e > 2000 ? e * price_after_limit : e * price_before_limit
+        e > 2000 ? e * price_after_limit.value : e * price_before_limit.value
       ),
       type: "scatter",
       mode: "lines",
@@ -183,19 +214,19 @@ div(class="row container")
     div(ref="chart")
     div(class="list-group col ms-5 mt-3")
       div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
-        p energy cost
-        p 40 zl
+        p price before limit 
+        p {{ price_before_limit }} PLN
       div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
-        p estimated month bill
-        p 30 zl 
+        p price after limit
+        p {{ price_after_limit }} PLN
     div(class="row my-5")
       div(class="col mx-3")
         IconAndSpan(icon="fa-wallet" text="price before limit")
-        input(class="form-control form-control-sm" type="number")
+        input(class="form-control form-control-sm" type="number" v-model="new_before")
       div(class="col mx-3")
         IconAndSpan(icon="fa-wallet" text="price after limit")
-        input(class="form-control form-control-sm" type="number")
-      button(class="btn btn-primary col fs-5 mx-2") refresh price
+        input(class="form-control form-control-sm" type="number" v-model="new_after")
+      button(class="btn btn-primary col fs-5 mx-2" @click="update_payments") refresh price
     IconAndSpan(icon="fa-chart-line" text="highest consumption devices")
     div(class="row mt-5")
       div(class="card border-warning col mx-3" v-for="device in highest_consumption_devices")
