@@ -56,7 +56,7 @@ div(class="container w-50 text-center")
   IconAndSpan(icon="fa-bolt" text="energy drain")
   div(class="input-group mt-1")
     input(type="text" class="form-control form-control-lg" placeholder="energy drain in kWh" v-model="drain")
-    span(class="input-group-text") kWh
+    span(class="input-group-text") kW
 button(@click="router.back()" class="btn btn-outline-secondary position-absolute top-0 end-0 mx-5 my-5 fs-4") back
 button(@click="create_device" class="btn btn-primary position-absolute top-0 start-0 mx-5 my-5 fs-4") Create
 </template>
