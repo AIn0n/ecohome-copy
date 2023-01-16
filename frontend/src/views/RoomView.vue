@@ -172,12 +172,30 @@ onMounted(async () => {
     title: "power usage over week",
   });
 });
+
+function color_on_class(device) {
+  return {
+    "list-group-item": true,
+    "list-group-item-action": true,
+    "d-flex": true,
+    "justify-content-between": true,
+    "list-group-item-success":
+      device.energy_class == 0 || device.energy_class == 1,
+    "list-group-item-warning":
+      device.energy_class == 2 ||
+      device.energy_class == 3 ||
+      device.energy_class == 4,
+    "list-group-item-danger":
+      device.energy_class == 6 || device.energy_class == 5,
+  };
+}
 </script>
 
 <template lang="pug">
 div(class="row container")
   BorderList(title="Devices")
-    li(class="list-group-item list-group-item-action d-flex justify-content-between" v-for="device in devices")
+    li(:class="color_on_class(device)" v-for="device in devices")
+      span(class="fs-6") {{ device.parameter }} kW
       span(class="fs-5" @click="router.push(`/${name}/edit-device/${device.name}`)") {{ device.name }}
       button(type="button" class="btn-close" aria-label="Close" @click="remove_device(device.name)")
     li(@click="router.push(`/${name}/add-device`)" class="list-group-item list-group-item-action list-group-item-primary fs-5") Add new device
