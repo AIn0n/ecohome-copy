@@ -9,7 +9,7 @@ import api from "../utilities/axios_config";
 import Plotly from "plotly.js-dist";
 
 const router = useRouter();
-const error = ref("example of warning message");
+const error = ref("");
 const rooms = ref([]);
 const price_before_limit = ref(0);
 const price_after_limit = ref(0);
@@ -23,11 +23,13 @@ const hours = Array(25)
   .fill()
   .map((_, i) => i);
 
-
-
 function refresh_highest_cons() {
-  highest_consumption_devices.value = all_devices.value.filter((x)=>x.device_type == 0).sort((a,b) =>{a.parameter - b.parameter}).slice(0,3);
-  console.log(highest_consumption_devices)
+  highest_consumption_devices.value = all_devices.value
+    .filter((x) => x.device_type == 0)
+    .sort((a, b) => {
+      a.parameter - b.parameter;
+    })
+    .slice(0, 3);
 }
 
 function refresh_payments() {
@@ -186,28 +188,6 @@ function add_room() {
     })
     .catch((e) => (error.value = e.message));
 }
-/*
-const highest_consumption_devices = [
-  {
-    name: "TV",
-    energy_class: "C",
-    energy_drain: 300,
-    room: "kitchen",
-  },
-  {
-    name: "Vacuum cleaner",
-    energy_class: "D--",
-    energy_drain: 250,
-    room: "bedroom",
-  },
-  {
-    name: "Blender",
-    energy_class: "E",
-    energy_drain: 250,
-    room: "kitchen",
-  },
-];
-*/
 </script>
 
 <template lang="pug">

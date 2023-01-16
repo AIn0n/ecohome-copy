@@ -9,7 +9,7 @@ import api from "@/utilities/axios_config";
 
 const route = useRoute();
 const router = useRouter();
-const error = ref("warning");
+const error = ref("");
 const { name } = route.params;
 const devices = ref([]);
 const chart = ref(null);

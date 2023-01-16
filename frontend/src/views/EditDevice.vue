@@ -4,7 +4,7 @@ import { ref, onBeforeMount } from "vue";
 import AlertComponent from "@/components/AlertComponent.vue";
 import api from "@/utilities/axios_config";
 
-const error_text = ref("example of warning");
+const error_text = ref("");
 const router = useRouter();
 const { device, room } = useRoute().params;
 const timestamps = ref([]);

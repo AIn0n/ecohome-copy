@@ -9,7 +9,7 @@ import api from "@/utilities/axios_config";
 const router = useRouter();
 const energy_classes = ref({});
 const device_types = ref({});
-const error = ref("example warning message");
+const error = ref("");
 const room: string | string[] = useRoute().params.room;
 
 const en_cls = ref(0);
