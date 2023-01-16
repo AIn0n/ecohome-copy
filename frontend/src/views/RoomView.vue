@@ -1,6 +1,7 @@
-<script setup lang="ts">
+<script setup>
 import { useRoute, useRouter } from "vue-router";
-import { ref, onBeforeMount } from "vue";
+import { ref, onBeforeMount, onMounted } from "vue";
+import Plotly from "plotly.js-dist";
 
 import BorderList from "@/components/BorderList.vue";
 import AlertComponent from "@/components/AlertComponent.vue";
@@ -11,15 +12,28 @@ const router = useRouter();
 const error = ref("warning");
 const { name } = route.params;
 const devices = ref([]);
+const chart = ref(null);
+const days = [
+  "monday",
+  "tuesday",
+  "wendesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+const hours = Array(25)
+  .fill()
+  .map((_, i) => i);
 
-function refresh_devices() {
-  api
+async function refresh_devices() {
+  await api
     .get(`/${name}/device`)
     .then((res) => (devices.value = res.data))
     .catch(router.back);
 }
 
-function remove_device(device: string) {
+function remove_device(device) {
   api
     .delete(`/${name}/device/${device}`)
     .then(() => {
@@ -29,7 +43,25 @@ function remove_device(device: string) {
     .catch((e) => (error.value = e.message));
 }
 
-onBeforeMount(refresh_devices);
+function prep_data_from_one_device(device, day) {
+  let data = Array(25)
+    .fill()
+    .map(() => 0);
+  console.log(data);
+  for (const timestamp of device.timestamps) {
+    console.log(timestamp.weekdays);
+    for (let i = timestamp.start; i < timestamp.end; ++i) {
+      data[i] = device.parameter;
+    }
+  }
+  return data;
+}
+
+onMounted(async () => {
+  await refresh_devices();
+  const y = prep_data_from_one_device(devices.value[0]);
+  Plotly.newPlot(chart.value, [{ x: hours, y: y, type: "scatter" }]);
+});
 </script>
 
 <template lang="pug">
@@ -42,6 +74,6 @@ div(class="row container")
   div(class="col text-center")
     h1(class="my-5") {{ name }}
     AlertComponent(:text="error" @clear="error = ''")
-    div(class="alert alert-primary") placeholder for chart
+    div(ref="chart") 
     button(@click="router.push('/')" class="btn btn-outline-secondary position-absolute top-0 end-0 mx-5 my-5 fs-4") back
 </template>
