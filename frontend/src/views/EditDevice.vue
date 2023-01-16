@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { useRoute, useRouter } from "vue-router";
 import { ref, onBeforeMount } from "vue";
 import AlertComponent from "@/components/AlertComponent.vue";
@@ -17,6 +17,27 @@ function refresh_timestamps() {
     .catch(() => (error_text.value = "cannot get timestamps, try later"));
 }
 
+function update_timestamps() {
+  timestamps.value.forEach((elem) => {
+    let week_as_num = 0;
+    Object.entries(elem["weekdays"]).forEach(([key, value]) => {
+      if (value == true) week_as_num += days.value[key];
+    });
+    elem["weekdays"] = week_as_num;
+  });
+  api
+    .post(`/${room}/device/${device}/timestamp-update`, timestamps.value)
+    .then((res) => {
+      error_text.value = res.data.message;
+      refresh_timestamps();
+    })
+    .catch(() => (error_text.value = "cannot update timestamps, try later"));
+}
+
+function remove_timestamp(timestamp) {
+  timestamps.value = timestamps.value.filter((n) => n !== timestamp);
+}
+
 onBeforeMount(() => {
   refresh_timestamps();
   api
@@ -31,7 +52,10 @@ div(class="container text-center w-75")
   h1(class="my-5") Edit {{ device }}
   AlertComponent(:text="error_text" @clear="error_text = ''")
   div(class="card text-bg-primary my-3")
-    div(class="card-header") add new timestamp
+    div(class="card-header")
+      div(class="form-check")
+        input(class="form-check-input" type="checkbox")
+        label(class="form-check-label") add new timestamp
     div(class="list-group list-group-flush")
       div(class="list-group-item d-flex justify-content-between")
         div(class="input-group input-group-sm w-50 mx-3 my-3")
@@ -59,7 +83,7 @@ div(class="container text-center w-75")
             input(class="form-check-input" type="checkbox" v-model="timestamp.weekdays[key]")
             label(class="form-check-label") {{ key }}
     div
-      button(type="button" class="btn-close" aria-label="Close")
+      button(type="button" class="btn-close" aria-label="Close" @click="remove_timestamp(timestamp)")
 button(@click="router.back()" class="btn btn-outline-secondary position-absolute top-0 end-0 mx-5 my-5 fs-4") back
-button(class="btn btn-primary position-absolute top-0 start-0 mx-5 my-5 fs-4") update
+button(@click="update_timestamps" class="btn btn-primary position-absolute top-0 start-0 mx-5 my-5 fs-4") update
 </template>

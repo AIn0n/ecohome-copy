@@ -21,7 +21,7 @@ def add_timestamp(room: str, device: str, timestamps: list[Timestamp]):
         {"name": room, "devices.name": device},
         {"$set": {"devices.$.timestamps": [dict(t) for t in timestamps]}},
     )
-    return {"message": "sucessfully added timestamp"}
+    return {"message": "sucessfully updated timestamps"}
 
 
 @timestamp.get("/{room}/device/{device}/timestamp")
