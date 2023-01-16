@@ -1,33 +1,161 @@
-<script setup lang="ts">
+<script setup>
 import { useRouter } from "vue-router";
 //components
 import AlertComponent from "@/components/AlertComponent.vue";
 import BorderList from "@/components/BorderList.vue";
 import IconAndSpan from "@/components/IconAndSpan.vue";
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, onMounted, ref } from "vue";
 import api from "../utilities/axios_config";
+import Plotly from 'plotly.js-dist'
 
 const router = useRouter();
 const error = ref("example of warning message");
 const rooms = ref([]);
 const new_room_name = ref("");
+const chart = ref(null);
+const hours = Array(25)
+  .fill()
+  .map((_, i) => i);
 
 function get_rooms() {
   api
     .get("/room/")
     .then((res) => {
-      rooms.value = res.data.map((x: { name: any }) => x.name);
+      rooms.value = res.data.map((x) => x.name);
     })
     .catch((e) => {
       error.value = e.message + " (probably backend is not working)";
     });
 }
 
-onBeforeMount(() => {
-  get_rooms();
-});
+onMounted(()=>{
+  api
+    .get("/room/")
+    .then(async (res) => {
+      rooms.value = res.data.map((x) => x.name);
+      let all_devices = [];
+      for (const room of rooms.value) {
+        await api.get(`/${room}/device`).then((res)=>{
+          all_devices.push(res.data);
+        })
+      }
+      Plotly.newPlot(chart.value, prep_solar_eff([].concat(...all_devices)),{
+        title: "solar system efficiency",
 
-function delete_room(room: string) {
+      })
+    })
+    .catch((e) => {
+      error.value = e.message + " (probably backend is not working)";
+    });
+
+})
+
+const days = [
+  "monday",
+  "tuesday",
+  "wendesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
+
+function prep_data_from_one_device(device, day) {
+  let data = Array(25)
+    .fill()
+    .map(() => 0);
+  device.timestamps
+    .filter((i) => i.weekdays[day] == true)
+    .forEach((n) => {
+      for (let i = n.start; i < n.end; ++i) data[i] = device.parameter;
+    });
+  return data;
+}
+
+function prep_data_from_week(device) {
+  return [].concat(...days.map((i) => prep_data_from_one_device(device, i)));
+}
+
+function x_data() {
+  return [].concat(
+    ...days.map((day) => [...hours].map((hour) => `${hour}:00 - ${day}`))
+  );
+}
+
+function prep_power_usage_traces(devices) {
+  const x = x_data();
+  return devices
+    .filter((dev) => dev.device_type == 0)
+    .map((dev) => ({
+      x: x,
+      y: prep_data_from_week(dev),
+      type: "scatter",
+      mode: "lines",
+      name: dev.name,
+    }));
+}
+
+function sum_devices_for_day(devices, day) {
+  const arrays = devices.map((elem) => prep_data_from_one_device(elem, day));
+  let result = hours.map(() => 0);
+  for (let j = 0; j < hours.length; ++j) {
+    for (let i = 0; i < arrays.length; ++i) {
+      result[j] -= arrays[i][j];
+    }
+  }
+  return result;
+}
+
+function prep_solar_eff(devices) {
+  const defs = devices.filter((dev) => dev.device_type == 0);
+  const solars = devices.filter((dev) => dev.device_type == 1);
+  const accs = devices.filter((dev) => dev.device_type == 2);
+  const limit = accs.reduce((acc, n) => acc + n.parameter, 0);
+  let accumulator = [];
+  let defs_acc = [];
+  let to_pay_acc = [];
+  for (const day of days) {
+    let usage = sum_devices_for_day(defs, day);
+    defs_acc = defs_acc.concat(usage);
+    let payment = [...usage];
+    for (const solar of solars) {
+      for (const timestamp of solar.timestamps) {
+        if (timestamp.weekdays[day] == true) {
+          for (let i = timestamp.start; i < timestamp.end; ++i) {
+            usage[i] += solar.parameter;
+            payment[i] += solar.parameter;
+            if (usage[i] > limit) usage[i] = limit;
+          }
+        }
+      }
+      accumulator.push(usage);
+    }
+    to_pay_acc.push(payment);
+  }
+  const over =[]
+        .concat(...to_pay_acc)
+        .map((e) => -e)
+        .map((e) => (e > 0 ? e : 0));
+
+  let result = over.map(()=>0);
+  for (let i = 1; i < result.length; ++i) {
+    result[i] += over[i - 1]
+  }
+  console.log(to_pay_acc);
+  const x = x_data();
+  return [
+    {
+      x: x,
+      y: result, 
+      type: "scatter",
+      mode: "lines",
+      name: "payment",
+    },
+  ];
+}
+
+
+function delete_room(room) {
   api
     .delete(`/room/${room}`)
     .then((res) => {
@@ -82,15 +210,14 @@ div(class="row container")
   div(class="col text-center")
     h1(class="my-5") hello User!
     AlertComponent(:text="error" @clear="error = ''")
-    div(class="row my-5")
-      div(class="col-6 alert alert-danger") placeholder for chart
-      div(class="list-group col ms-5")
-        div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
-          p energy cost
-          p 40 zl
-        div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
-          p estimated month bill
-          p 30 zl 
+    div(ref="chart")
+    div(class="list-group col ms-5 mt-3")
+      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
+        p energy cost
+        p 40 zl
+      div(class="list-group-item list-group-item-warning d-flex justify-content-between fs-4")
+        p estimated month bill
+        p 30 zl 
     div(class="row my-5")
       div(class="col mx-3")
         IconAndSpan(icon="fa-wallet" text="price before limit")
